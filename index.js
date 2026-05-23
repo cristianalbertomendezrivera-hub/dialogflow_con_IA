@@ -17,7 +17,7 @@ app.post('/webhook', async (request, response) => {
 
     try {
       // La librería elige automáticamente la mejor URL y versión del modelo
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
       
       const prompt = `Eres un experto asistente de la Wiki del Proceso Administrativo. Responde de forma clara, formal y breve a esto: ${preguntaUsuario}`;
       
