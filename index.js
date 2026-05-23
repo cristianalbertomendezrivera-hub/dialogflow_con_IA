@@ -1,66 +1,47 @@
 const express = require('express');
 const { WebhookClient } = require('dialogflow-fulfillment');
-const axios = require('axios'); // Importamos la nueva herramienta
+const axios = require('axios');
 const app = express();
 
 app.use(express.json());
 
-// Tu llave de DeepSeek (Mantén esto privado)
-const DEEPSEEK_API_KEY = 'sk-663077864c264bd996d9e2a2cbbb0a17';
+// Tu nueva API Key de Gemini
+const GEMINI_API_KEY = 'AIzaSyAJHKQHgf8-wyRVNnhTJJNAq4xuQ84WMDk';
 
 app.post('/webhook', (request, response) => {
   const agent = new WebhookClient({ request, response });
 
-  // Convertimos la función en 'async' porque debe esperar a que la IA piense y responda
   async function fallback(agent) {
-    const preguntaUsuario = agent.query; // Capturamos lo que el usuario escribió en el chat
+    const preguntaUsuario = agent.query;
 
     try {
-      // Hacemos la petición a la API de DeepSeek
-      const respuestaDeepSeek = await axios.post(
-        'https://api.deepseek.com/chat/completions',
+      // Petición ajustada para la API de Gemini 1.5 Flash
+      const respuestaGemini = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
-          model: 'deepseek-chat',
-          messages: [
-            {
-              // SYSTEM PROMPT: Aquí le damos la personalidad y las reglas a la IA
-              role: 'system',
-              content: 'Eres el asistente virtual experto de la Wiki del Proceso Administrativo. Tus respuestas deben ser amables, claras, breves y enfocadas únicamente en temas de Planeación, Organización, Dirección y Control. Si te preguntan algo fuera de estos temas, indica cortésmente que tu especialidad es la administración.'
-            },
-            {
-              // USER: Lo que preguntó el usuario
-              role: 'user',
-              content: preguntaUsuario
-            }
-          ]
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-            'Content-Type': 'application/json'
-          }
+          contents: [{
+            parts: [{
+              text: `Eres el asistente de la Wiki del Proceso Administrativo. Responde a esto: ${preguntaUsuario}`
+            }]
+          }]
         }
       );
 
-      // Extraemos el texto exacto que generó DeepSeek
-      const textoGenerado = respuestaDeepSeek.data.choices[0].message.content;
+      // Extraer el texto de la respuesta de Gemini
+      const textoGenerado = respuestaGemini.data.candidates[0].content.parts[0].text;
 
-      // Se lo enviamos de vuelta al chat de Dialogflow
       agent.add(textoGenerado);
 
     } catch (error) {
-      console.error('Error al contactar a DeepSeek:', error.message);
-      agent.add('Lo siento, en este momento mis servidores de inteligencia artificial están experimentando problemas. Por favor, intenta de nuevo más tarde.');
+      console.error('Error con Gemini:', error.response ? error.response.data : error.message);
+      agent.add('Lo siento, en este momento el asistente tiene dificultades técnicas.');
     }
   }
 
   let intentMap = new Map();
-  // Conectamos el Intent predeterminado con nuestra nueva función con IA
   intentMap.set('Default Fallback Intent', fallback);
   agent.handleRequest(intentMap);
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor de la Wiki encendido y escuchando en el puerto ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Servidor activo en puerto ${PORT}`));
