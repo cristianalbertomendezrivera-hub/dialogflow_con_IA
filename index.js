@@ -1,11 +1,12 @@
 const express = require('express');
 const { WebhookClient } = require('dialogflow-fulfillment');
-const axios = require('axios');
+const { GoogleGenerativeAI } = require('@google/generative-ai'); // Importamos la librería oficial
 const app = express();
 
 app.use(express.json());
 
-const GEMINI_API_KEY = 'AIzaSyAJHKQHgf8-wyRVNnhTJJNAq4xuQ84WMDk';
+// Inicializamos la IA con tu llave
+const genAI = new GoogleGenerativeAI('AIzaSyAJHKQHgf8-wyRVNnhTJJNAq4xuQ84WMDk');
 
 app.post('/webhook', async (request, response) => {
   const agent = new WebhookClient({ request, response });
@@ -15,21 +16,19 @@ app.post('/webhook', async (request, response) => {
     console.log('Pregunta recibida:', preguntaUsuario);
 
     try {
-      // CAMBIO CLAVE: Usamos la ruta "v1" estable y el modelo 1.5-flash
-      const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+      // La librería elige automáticamente la mejor URL y versión del modelo
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
-      const respuestaGemini = await axios.post(url, {
-        contents: [{ parts: [{ text: `Eres un experto asistente de la Wiki del Proceso Administrativo. Responde de forma clara y formal a esto: ${preguntaUsuario}` }] }]
-      });
-
-      const textoGenerado = respuestaGemini.data.candidates[0].content.parts[0].text;
+      const prompt = `Eres un experto asistente de la Wiki del Proceso Administrativo. Responde de forma clara, formal y breve a esto: ${preguntaUsuario}`;
+      
+      const result = await model.generateContent(prompt);
+      const textoGenerado = result.response.text();
+      
       agent.add(textoGenerado);
 
     } catch (error) {
-      const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
-      console.error('ERROR EN GEMINI:', errorMsg);
-      // Ampliamos a 250 caracteres para leer el error completo si Google se queja
-      agent.add('Error técnico: ' + errorMsg.substring(0, 250)); 
+      console.error('ERROR EN GEMINI:', error);
+      agent.add('Error técnico: ' + error.message.substring(0, 250)); 
     }
   }
 
@@ -38,4 +37,4 @@ app.post('/webhook', async (request, response) => {
   agent.handleRequest(intentMap);
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('Servidor en línea'));
+app.listen(process.env.PORT || 3000, () => console.log('Servidor en línea con SDK de Google'));
