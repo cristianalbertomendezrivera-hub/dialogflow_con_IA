@@ -5,7 +5,7 @@ const app = express();
 
 app.use(express.json());
 
-// Leeremos la clave de forma segura desde Render, no desde el código
+// Leeremos la clave de forma segura desde Render
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 app.post('/webhook', async (request, response) => {
@@ -24,7 +24,8 @@ app.post('/webhook', async (request, response) => {
           'Content-Type': 'application/json'
         },
         data: {
-          model: 'llama3-8b-8192', 
+          // CAMBIO AQUÍ: Usamos la versión 3.1 más reciente y activa de Groq
+          model: 'llama-3.1-8b-instant', 
           messages: [
             { role: 'system', content: 'Eres un experto asistente de la Wiki del Proceso Administrativo. Responde de forma clara, formal y breve.' },
             { role: 'user', content: preguntaUsuario }
@@ -37,7 +38,7 @@ app.post('/webhook', async (request, response) => {
       agent.add(textoGenerado);
 
     } catch (error) {
-      console.error('ERROR EN GROQ:', error.response ? error.response.data : error.message);
+      console.error('ERROR EN GROQ:', error.response ? JSON.stringify(error.response.data) : error.message);
       agent.add('Error técnico con la IA. Revisa los logs de Render.');
     }
   }
