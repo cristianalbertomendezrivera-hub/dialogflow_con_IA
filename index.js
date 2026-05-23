@@ -1,12 +1,13 @@
 const express = require('express');
 const { WebhookClient } = require('dialogflow-fulfillment');
-const { GoogleGenerativeAI } = require('@google/generative-ai'); // Importamos la librería oficial
-const app = express();
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+const app = express();
 app.use(express.json());
 
-// Inicializamos la IA con tu llave
-const genAI = new GoogleGenerativeAI('AIzaSyAJHKQHgf8-wyRVNnhTJJNAq4xuQ84WMDk');
+// Tu nueva clave de Google AI Studio con todos los permisos habilitados
+const GEMINI_API_KEY = 'AIzaSyAf-a4v0C7S5ccsgRDlRB2xWGbqkdMeYnc';
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 app.post('/webhook', async (request, response) => {
   const agent = new WebhookClient({ request, response });
@@ -16,8 +17,8 @@ app.post('/webhook', async (request, response) => {
     console.log('Pregunta recibida:', preguntaUsuario);
 
     try {
-      // La librería elige automáticamente la mejor URL y versión del modelo
-      const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+      // Utilizamos el modelo oficial y rápido de Gemini
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
       const prompt = `Eres un experto asistente de la Wiki del Proceso Administrativo. Responde de forma clara, formal y breve a esto: ${preguntaUsuario}`;
       
@@ -37,4 +38,5 @@ app.post('/webhook', async (request, response) => {
   agent.handleRequest(intentMap);
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('Servidor en línea con SDK de Google'));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Servidor en línea con SDK de Google en el puerto ${PORT}`));
