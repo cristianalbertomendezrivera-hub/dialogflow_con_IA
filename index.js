@@ -45,6 +45,7 @@ app.post('/webhook', async (request, response) => {
 
   let intentMap = new Map();
   intentMap.set('Default Fallback Intent', fallback);
+  intentMap.set('Default Welcome Intent', fallback);
   agent.handleRequest(intentMap);
 });
 
