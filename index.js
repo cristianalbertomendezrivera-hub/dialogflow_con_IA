@@ -1,13 +1,12 @@
 const express = require('express');
 const { WebhookClient } = require('dialogflow-fulfillment');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-
+const axios = require('axios');
 const app = express();
+
 app.use(express.json());
 
-// Tu nueva clave de Google AI Studio con todos los permisos habilitados
-const GEMINI_API_KEY = 'AIzaSyAf-a4v0C7S5ccsgRDlRB2xWGbqkdMeYnc';
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+// Leeremos la clave de forma segura desde Render, no desde el código
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 app.post('/webhook', async (request, response) => {
   const agent = new WebhookClient({ request, response });
@@ -17,19 +16,29 @@ app.post('/webhook', async (request, response) => {
     console.log('Pregunta recibida:', preguntaUsuario);
 
     try {
-      // Utilizamos el modelo oficial y rápido de Gemini
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-      
-      const prompt = `Eres un experto asistente de la Wiki del Proceso Administrativo. Responde de forma clara, formal y breve a esto: ${preguntaUsuario}`;
-      
-      const result = await model.generateContent(prompt);
-      const textoGenerado = result.response.text();
-      
+      const respuestaGroq = await axios({
+        method: 'post',
+        url: 'https://api.groq.com/openai/v1/chat/completions',
+        headers: {
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        data: {
+          model: 'llama3-8b-8192', 
+          messages: [
+            { role: 'system', content: 'Eres un experto asistente de la Wiki del Proceso Administrativo. Responde de forma clara, formal y breve.' },
+            { role: 'user', content: preguntaUsuario }
+          ],
+          stream: false
+        }
+      });
+
+      const textoGenerado = respuestaGroq.data.choices[0].message.content;
       agent.add(textoGenerado);
 
     } catch (error) {
-      console.error('ERROR EN GEMINI:', error);
-      agent.add('Error técnico: ' + error.message.substring(0, 250)); 
+      console.error('ERROR EN GROQ:', error.response ? error.response.data : error.message);
+      agent.add('Error técnico con la IA. Revisa los logs de Render.');
     }
   }
 
@@ -39,4 +48,4 @@ app.post('/webhook', async (request, response) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor en línea con SDK de Google en el puerto ${PORT}`));
+app.listen(PORT, () => console.log(`Servidor en línea en el puerto ${PORT}`));
