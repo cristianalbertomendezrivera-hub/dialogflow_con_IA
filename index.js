@@ -18,7 +18,7 @@ app.post('/webhook', async (request, response) => {
 
     try {
       // Utilizamos el modelo oficial y rápido de Gemini
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
       
       const prompt = `Eres un experto asistente de la Wiki del Proceso Administrativo. Responde de forma clara, formal y breve a esto: ${preguntaUsuario}`;
       
