@@ -15,8 +15,8 @@ app.post('/webhook', async (request, response) => {
     console.log('Pregunta recibida:', preguntaUsuario);
 
     try {
-      // CAMBIO AQUÍ: Usamos el modelo 'gemini-pro' que es el estándar estable
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+      // CAMBIO CLAVE: Usamos la ruta "v1" estable y el modelo 1.5-flash
+      const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
       
       const respuestaGemini = await axios.post(url, {
         contents: [{ parts: [{ text: `Eres un experto asistente de la Wiki del Proceso Administrativo. Responde de forma clara y formal a esto: ${preguntaUsuario}` }] }]
@@ -28,7 +28,8 @@ app.post('/webhook', async (request, response) => {
     } catch (error) {
       const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
       console.error('ERROR EN GEMINI:', errorMsg);
-      agent.add('Error técnico: ' + errorMsg.substring(0, 50)); 
+      // Ampliamos a 250 caracteres para leer el error completo si Google se queja
+      agent.add('Error técnico: ' + errorMsg.substring(0, 250)); 
     }
   }
 
