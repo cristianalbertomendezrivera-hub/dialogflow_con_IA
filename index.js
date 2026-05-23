@@ -15,17 +15,17 @@ app.post('/webhook', async (request, response) => {
     console.log('Pregunta recibida:', preguntaUsuario);
 
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+      // CAMBIO AQUÍ: Usamos el modelo 'gemini-pro' que es el estándar estable
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
       
       const respuestaGemini = await axios.post(url, {
-        contents: [{ parts: [{ text: `Eres un asistente administrativo. Responde: ${preguntaUsuario}` }] }]
+        contents: [{ parts: [{ text: `Eres un experto asistente de la Wiki del Proceso Administrativo. Responde de forma clara y formal a esto: ${preguntaUsuario}` }] }]
       });
 
       const textoGenerado = respuestaGemini.data.candidates[0].content.parts[0].text;
       agent.add(textoGenerado);
 
     } catch (error) {
-      // ESTO ES LO IMPORTANTE: Enviamos el error al log de Render
       const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
       console.error('ERROR EN GEMINI:', errorMsg);
       agent.add('Error técnico: ' + errorMsg.substring(0, 50)); 
