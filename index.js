@@ -5,36 +5,30 @@ const app = express();
 
 app.use(express.json());
 
-// Tu nueva API Key de Gemini
 const GEMINI_API_KEY = 'AIzaSyAJHKQHgf8-wyRVNnhTJJNAq4xuQ84WMDk';
 
-app.post('/webhook', (request, response) => {
+app.post('/webhook', async (request, response) => {
   const agent = new WebhookClient({ request, response });
 
   async function fallback(agent) {
     const preguntaUsuario = agent.query;
+    console.log('Pregunta recibida:', preguntaUsuario);
 
     try {
-      // Petición ajustada para la API de Gemini 1.5 Flash
-      const respuestaGemini = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          contents: [{
-            parts: [{
-              text: `Eres el asistente de la Wiki del Proceso Administrativo. Responde a esto: ${preguntaUsuario}`
-            }]
-          }]
-        }
-      );
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+      
+      const respuestaGemini = await axios.post(url, {
+        contents: [{ parts: [{ text: `Eres un asistente administrativo. Responde: ${preguntaUsuario}` }] }]
+      });
 
-      // Extraer el texto de la respuesta de Gemini
       const textoGenerado = respuestaGemini.data.candidates[0].content.parts[0].text;
-
       agent.add(textoGenerado);
 
     } catch (error) {
-      console.error('Error con Gemini:', error.response ? error.response.data : error.message);
-      agent.add('Lo siento, en este momento el asistente tiene dificultades técnicas.');
+      // ESTO ES LO IMPORTANTE: Enviamos el error al log de Render
+      const errorMsg = error.response ? JSON.stringify(error.response.data) : error.message;
+      console.error('ERROR EN GEMINI:', errorMsg);
+      agent.add('Error técnico: ' + errorMsg.substring(0, 50)); 
     }
   }
 
@@ -43,5 +37,4 @@ app.post('/webhook', (request, response) => {
   agent.handleRequest(intentMap);
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor activo en puerto ${PORT}`));
+app.listen(process.env.PORT || 3000, () => console.log('Servidor en línea'));
